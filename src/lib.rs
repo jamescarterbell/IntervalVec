@@ -9,6 +9,7 @@ struct IntervalNode<T>
     element: T,
     start: usize,
     count: usize,
+    depth: usize,
     left: Option<Box<IntervalNode<T>>>,
     right: Option<Box<IntervalNode<T>>>,
 }
@@ -47,33 +48,6 @@ impl<T> IntervalVec<T>
     pub fn get(&self, index: usize) -> Result<&T, IntervalVecErr>{
         let result = match &self.head{
             Some(node) => node.get(index),
-            None =>  None,
-        };
-
-        match result{
-            Some(element) => Ok(element),
-            None => Err(IntervalVecErr::OutOfRange{
-                count: self.count,
-                index
-            })
-        }
-    }
-    
-    /// Gets the element at the given index.
-    /// ```
-    /// # use interval_vec::*;
-    /// # fn main(){
-    /// let mut v = IntervalVec::new();
-    /// v.push(0);
-    /// v.push(1);
-    /// v.push(2);
-    /// *v.get_mut(0).unwrap() = 3;
-    /// assert_eq!(v.get(0).unwrap(), &3);
-    /// # }
-    /// ```
-    pub fn get_mut(&mut self, index: usize) -> Result<&mut T, IntervalVecErr>{
-        let result = match &mut self.head{
-            Some(node) => node.get_mut(index),
             None =>  None,
         };
 
@@ -141,6 +115,7 @@ impl<T> IntervalVec<T>
                         element,
                         start: 0,
                         count: 1,
+                        depth: 0,
                         left: None,
                         right: None,
                     }));
@@ -198,21 +173,6 @@ impl<T> IntervalNode<T>
         }
     }
 
-    /// Gets a mutable reference to an element at index via tree traversal.
-    fn get_mut(&mut self, index: usize) -> Option<&mut T>{
-        match index{
-            i if i < self.start => match &mut self.left{
-                Some(node) => node.get_mut(index),
-                None => None,
-            },
-            i if i >= self.start + self.count => match &mut self.right{
-                Some(node) => node.get_mut(index),
-                None => None,
-            },
-            _ => Some(&mut self.element)
-        }
-    }
-
     fn set(&mut self, index: usize, element: T) -> Result<(), ()>{
         match index{
             i if i < self.start => return match &mut self.left{
@@ -236,31 +196,48 @@ impl<T> IntervalNode<T>
     }
 
     fn replace_node(&mut self, index: usize, element: T){
-        let mut new_right = IntervalNode{
-            count: self.count - (index - self.start),
-            start: self.start + index,
-            element: self.element.clone(),
-            left: None,
-            right: None,
+        let new_right = match self.count - (index - self.start){
+            count if count > 0 => Some(
+                IntervalNode{
+                    count: self.count - (index - self.start),
+                    start: self.start + index,
+                    depth: self.depth + 1,
+                    element: self.element.clone(),
+                    left: None,
+                    right: None,
+                }
+            ),
+            _ => None,
         };
         
-        let mut new_left = IntervalNode{
-            count: self.count - (new_right.count),
-            start: self.start,
-            element: self.element.clone(),
-            left: None,
-            right: None,
+        let right_count = match &new_right{
+            Some(node) => node.count,
+            None => 0,
+        };
+
+        let new_left = match self.count - (right_count){
+            count if count > 0 => Some(
+                IntervalNode{
+                    count,
+                    start: self.start,
+                    depth: self.depth + 1,
+                    element: self.element.clone(),
+                    left: None,
+                    right: None,
+                }
+            ),
+            _ => None,
         };
         
         self.count = 1;
         self.element = element;
         
-        if new_left.count != 0{
+        if let Some(mut new_left) = new_left{
             std::mem::swap( &mut self.left, &mut new_left.left);
             self.left = Some(Box::new(new_left));
         }
 
-        if new_right.count != 0{
+        if let Some(mut new_right) = new_right{
             std::mem::swap( &mut self.right, &mut new_right.right);
             self.right = Some(Box::new(new_right));
         }
@@ -284,6 +261,7 @@ impl<T> IntervalNode<T>
                             element,
                             start: self.start + self.count,
                             count: 1,
+                            depth: self.depth + 1,
                             left: None,
                             right: None,
                         }));
