@@ -1,3 +1,5 @@
+mod rotations;
+
 pub struct IntervalVec<T>
     where T: PartialEq + Clone{
     head: Option<Box<IntervalNode<T>>>,
@@ -9,7 +11,6 @@ struct IntervalNode<T>
     element: T,
     start: usize,
     count: usize,
-    depth: usize,
     left: Option<Box<IntervalNode<T>>>,
     right: Option<Box<IntervalNode<T>>>,
 }
@@ -115,7 +116,6 @@ impl<T> IntervalVec<T>
                         element,
                         start: 0,
                         count: 1,
-                        depth: 0,
                         left: None,
                         right: None,
                     }));
@@ -201,7 +201,6 @@ impl<T> IntervalNode<T>
                 IntervalNode{
                     count: self.count - (index - self.start),
                     start: self.start + index,
-                    depth: self.depth + 1,
                     element: self.element.clone(),
                     left: None,
                     right: None,
@@ -220,7 +219,6 @@ impl<T> IntervalNode<T>
                 IntervalNode{
                     count,
                     start: self.start,
-                    depth: self.depth + 1,
                     element: self.element.clone(),
                     left: None,
                     right: None,
@@ -261,7 +259,6 @@ impl<T> IntervalNode<T>
                             element,
                             start: self.start + self.count,
                             count: 1,
-                            depth: self.depth + 1,
                             left: None,
                             right: None,
                         }));
@@ -300,6 +297,4 @@ impl<T> IntervalNode<T>
             None => {}
         };
     }
-
-    //fn rebalance(&mut self)
 }
