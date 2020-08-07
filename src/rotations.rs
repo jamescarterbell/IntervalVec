@@ -72,6 +72,7 @@ impl<T> IntervalNode<T>
 
     pub fn rotate(&mut self){
         let diff = self.node_height_diff();
+        println!("ROTATION CHECK: {}", diff);
 
         // Remove the correct node from the tree
         let mut new_self = match diff{
@@ -95,7 +96,6 @@ impl<T> IntervalNode<T>
             }
             _ => return,
         };
-
         // Swap all the values of the node
         mem::swap(&mut self.element, &mut new_self.element);
         mem::swap(&mut self.count, &mut new_self.count);

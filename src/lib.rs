@@ -167,6 +167,7 @@ impl<T> IntervalNode<T>
     where T: PartialEq + Clone{
     /// Gets a reference to an element at index via tree traversal.
     fn get(&self, index: usize) -> Option<&T>{
+        println!("{}, {}", self.start, self.count);
         match index{
             i if i < self.start => match &self.left{
                 Some(node) => node.get(index),
@@ -197,7 +198,7 @@ impl<T> IntervalNode<T>
                 },
                 None => Err(()),
             },
-            i if i >= self.start + self.count => return match &mut self.right{
+            i if i > self.start + self.count => return match &mut self.right{
                 Some(node) => {
                     match node.set(index, element){
                         Ok(status) => match status{
@@ -306,6 +307,7 @@ impl<T> IntervalNode<T>
                 },
                 None => {
                     if i == self.start + self.count{
+                        println!("End of list!");
                         self.right = Some(Box::new(IntervalNode{
                             element,
                             start: self.start + self.count,
