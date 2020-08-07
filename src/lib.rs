@@ -23,6 +23,11 @@ pub enum IntervalVecErr{
     }
 }
 
+enum RotStatus{
+    Required,
+    NotRequired
+}
+
 impl<T> IntervalVec<T>
     where T: PartialEq + Clone{
 
@@ -82,7 +87,7 @@ impl<T> IntervalVec<T>
                 node.set(index, element).map_err(|_| IntervalVecErr::OutOfRange{
                     count: self.count,
                     index
-                }),
+                }).map(|_| ()),
             None => Err(IntervalVecErr::OutOfRange{
                 count: self.count,
                 index
@@ -109,7 +114,7 @@ impl<T> IntervalVec<T>
                 node.insert(index, element).map_err(|_| IntervalVecErr::OutOfRange{
                     count: self.count,
                     index
-                }),
+                }).map(|_| ()),
             None =>{
                 if index == 0{
                     self.head = Some(Box::new(IntervalNode{
@@ -173,24 +178,46 @@ impl<T> IntervalNode<T>
         }
     }
 
-    fn set(&mut self, index: usize, element: T) -> Result<(), ()>{
+    fn set(&mut self, index: usize, element: T) -> Result<RotStatus, ()>{
         match index{
             i if i < self.start => return match &mut self.left{
-                Some(node) => node.set(index, element),
+                Some(node) => {
+                    match node.set(index, element){
+                        Ok(status) => match status{
+                            RotStatus::Required => {
+                                self.rotate();
+                                Ok(RotStatus::NotRequired)
+                            },
+                            RotStatus::NotRequired => Ok(RotStatus::NotRequired)
+                        },
+                        Err(err) => Err(err),
+                    }
+                },
                 None => Err(()),
             },
             i if i >= self.start + self.count => return match &mut self.right{
-                Some(node) => node.set(index, element),
+                Some(node) => {
+                    match node.set(index, element){
+                        Ok(status) => match status{
+                            RotStatus::Required => {
+                                self.rotate();
+                                Ok(RotStatus::NotRequired)
+                            },
+                            RotStatus::NotRequired => Ok(RotStatus::NotRequired)
+                        },
+                        Err(err) => Err(err),
+                    }
+                },
                 None => Err(()),
             },
             _ => {}
         };
 
         match element == self.element{
-            true => Ok(()),
+            true => Ok(RotStatus::NotRequired),
             false => {
                 self.replace_node(index, element);
-                Ok(())
+                Ok(RotStatus::Required)
             }
         }
     }
@@ -245,14 +272,36 @@ impl<T> IntervalNode<T>
         }
     }
 
-    fn insert(&mut self, index: usize, element: T) -> Result<(), ()>{
+    fn insert(&mut self, index: usize, element: T) -> Result<RotStatus, ()>{
         match index{
             i if i < self.start => return match &mut self.left{
-                Some(node) => node.insert(index, element),
+                Some(node) => {
+                    match node.insert(index, element){
+                        Ok(status) => match status{
+                            RotStatus::Required => {
+                                self.rotate();
+                                Ok(RotStatus::NotRequired)
+                            },
+                            RotStatus::NotRequired => Ok(RotStatus::NotRequired)
+                        },
+                        Err(err) => Err(err),
+                    }
+                },
                 None => Err(()),
             },
             i if index >= self.start + self.count => return match &mut self.right{
-                Some(node) => node.insert(index, element),
+                Some(node) => {
+                    match node.insert(index, element){
+                        Ok(status) => match status{
+                            RotStatus::Required => {
+                                self.rotate();
+                                Ok(RotStatus::NotRequired)
+                            },
+                            RotStatus::NotRequired => Ok(RotStatus::NotRequired)
+                        },
+                        Err(err) => Err(err),
+                    }
+                },
                 None => {
                     if i == self.start + self.count{
                         self.right = Some(Box::new(IntervalNode{
@@ -262,7 +311,7 @@ impl<T> IntervalNode<T>
                             left: None,
                             right: None,
                         }));
-                        Ok(())
+                        Ok(RotStatus::Required)
                     }
                     else{
                         Err(())
@@ -270,18 +319,21 @@ impl<T> IntervalNode<T>
                 },
             },
             _ => {
+                let rot_status;
                 if element != self.element{
                     self.replace_node(index, element);
+                    rot_status = RotStatus::Required;
                 }
                 else{
                     self.count += 1;
+                    rot_status = RotStatus::NotRequired;
                 }
         
                 match &mut self.right{
                     Some(node) => node.increase_start(),
                     None => {},
                 };
-                Ok(())
+                Ok(rot_status)
             }
         }
     }
