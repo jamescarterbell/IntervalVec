@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod tests;
 mod rotations;
 
 pub struct IntervalVec<T>
