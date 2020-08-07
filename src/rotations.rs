@@ -37,10 +37,10 @@ impl<T> IntervalNode<T>
     /// said node and return it up.
     fn right_most(&mut self) -> Option<Box<IntervalNode<T>>>{
         let r_node = match &mut self.right{
-            Some(node) => self.right_most(),
+            Some(node) => node.right_most(),
             None => return None,
         };
-
+        
         match r_node{
             Some(node) => return Some(node),
             None => {
@@ -56,10 +56,10 @@ impl<T> IntervalNode<T>
     /// said node and return it up.
     fn left_most(&mut self) -> Option<Box<IntervalNode<T>>>{
         let l_node = match &mut self.left{
-            Some(node) => self.left_most(),
+            Some(node) => node.left_most(),
             None => return None,
         };
-
+        
         match l_node{
             Some(node) => return Some(node),
             None =>{
@@ -76,19 +76,19 @@ impl<T> IntervalNode<T>
         // Remove the correct node from the tree
         let mut new_self = match diff{
             left if left > 1 => match &mut self.left{
-                Some(node) => {
-                    match node.right_most(){
-                        Some(node) => node,
-                        None => return,
+                Some(node) => match node.right_most(){
+                    Some(node) => node,
+                    None => {
+                        mem::replace(&mut self.left, None).unwrap()
                     }
                 },
                 None => return,
             }
             right if right < -1 => match &mut self.right{
-                Some(node) =>{
-                    match node.left_most(){
-                        Some(node) => node,
-                        None => return,
+                Some(node) => match node.left_most(){
+                    Some(node) => node,
+                    None => {
+                        mem::replace(&mut self.right, None).unwrap()
                     }
                 },
                 None => return,

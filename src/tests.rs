@@ -6,8 +6,13 @@ mod tests{
     #[test]
     fn random_numbers_test(){
         let mut v = IntervalVec::new();
-        for _ in 0..10000{
-            v.push(rand::random::<i32>());
+        let mut v_check = Vec::new();
+        for i in 0..1000000{
+            assert_eq!(v.len(), i);
+            let element = rand::random::<i32>() % 100;
+            let _ = v.push(element);
+            v_check.push(element);
+            assert_eq!(v.get(v.len() - 1).unwrap(), v_check.get(v_check.len() - 1).unwrap());
         }
     } 
 }
